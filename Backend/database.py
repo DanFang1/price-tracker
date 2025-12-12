@@ -23,22 +23,22 @@ def get_connection():
     )
 
 
-def insert_products():
-    "Inserts a new product into the products tabke based on user input URL"
+def insert_user_products():
+    "Inserts a new product into the products table based on user input URL"
     product = scraper.return_dict(input("Enter the URL: "))
     
     query = sql.SQL(
         """
-        INSERT INTO products (product_name, current_price, product_url)
+        INSERT INTO usertrackeditems (utt_user_id, target_price)
         VALUES (%s, %s, %s)
-        RETURNING product_id;
+        RETURNING utt_user_id;
         """
     )
     
     with get_connection() as conn:
         with conn.cursor() as cur:
             try:
-                cur.execute(query, (product["product_name"], product["current_price"], product["product_url"]))
+                cur.execute(query, (product["product_name"], product["product_price"], product["product_url"]))
                 product_id = cur.fetchone()[0]
                 conn.commit()
                 print(f"Product inserted with ID: {product_id}")
@@ -47,7 +47,7 @@ def insert_products():
                 print(f"Error inserting product: {e}")
     
 
-def check_connection():
+def check_connection() -> bool:
     "Checks if database connection is successful"
     try:
         with get_connection() as conn:
