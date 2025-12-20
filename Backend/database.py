@@ -22,7 +22,6 @@ def get_connection():
         port=DB_PORT,
     )
 
-
 def insert_user_products():
     "Inserts a new product into the products table based on user input URL"
     product = scraper.return_dict(input("Enter the URL: "))
