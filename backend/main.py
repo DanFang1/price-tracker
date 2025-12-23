@@ -1,2 +1,2 @@
-from database import insert_products
-insert_products()
+from database import insert_user_products
+insert_user_products()
