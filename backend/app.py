@@ -1,10 +1,11 @@
 # app.py
+import os
 from flask import Flask, session, request
 from auth import login_user
 from database import insert_user_products
 
 app = Flask(__name__)
-app.secret_key = ""
+app.secret_key = os.getenv("FLASK_KEY")
 
 @app.route('/login', methods=['POST'])
 def login():
