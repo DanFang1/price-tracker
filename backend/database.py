@@ -37,12 +37,12 @@ def insert_user_products(user_id, product_url, target_price):
                     product = scraper.return_dict(product_url)
                     query1 = sql.SQL(
                         """
-                        INSERT INTO products (product_url, product_name, price_history, current_price)
-                        VALUES (%s, %s, %s, %s)
+                        INSERT INTO products (product_url, product_name, current_price)
+                        VALUES (%s, %s, %s)
                         RETURNING product_id;
                         """
                     )
-                    cur.execute(query1, (product["product_url"], product["product_name"], product["product_price"], product["product_price"]))
+                    cur.execute(query1, (product["product_url"], product["product_name"], product["product_price"]))
                     product_id = cur.fetchone()[0]
                     conn.commit()
                     print(f"Product inserted with ID: {product_id}")
@@ -71,14 +71,14 @@ def insert_user_products(user_id, product_url, target_price):
 
 def check_duplicate_product(product_url: str) -> bool:
     "Checks if the product already exists in the products table"
-    query = "SELECT EXISTS(SELECT 1 FROM usertrackeditems WHERE product_url = %s);"
+    query = "SELECT EXISTS(SELECT 1 FROM products WHERE product_url = %s);"
     
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, (product_url,))
             exists = cur.fetchone()[0]
             return exists
-    
+
 
 def check_connection() -> bool:
     "Checks if database connection is successful"
