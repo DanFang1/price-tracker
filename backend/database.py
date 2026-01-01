@@ -23,7 +23,7 @@ def get_connection():
     )
 
 
-def insert_user_products(user_id, product_url):
+def insert_user_products(user_id, product_url, target_price):
     "Inserts a new product into the products table based on product URL, then links to user"
     
     # Check if product already exists
@@ -55,12 +55,12 @@ def insert_user_products(user_id, product_url):
                 # Insert into usertrackeditems (query2)
                 query2 = sql.SQL(
                     """
-                    INSERT INTO usertrackeditems (user_item_id, product_, price_history, current_price)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO usertrackeditems (user_item_id, utt_user_id, target_price)
+                    VALUES (%s, %s, %s)
                     RETURNING product_id;
                     """
                 )
-                cur.execute(query2, (user_id, product_id, None, None))
+                cur.execute(query2, (product_id, user_id, target_price))
                 conn.commit()
                 print(f"User item inserted for user {user_id}")
                 
@@ -79,14 +79,6 @@ def check_duplicate_product(product_url: str) -> bool:
             exists = cur.fetchone()[0]
             return exists
     
-
-
-
-def select_price() -> int:
-    "User inputs a target price for a product"
-    target_price = int(input("Enter your target price: "))
-    return target_price
-
 
 def check_connection() -> bool:
     "Checks if database connection is successful"

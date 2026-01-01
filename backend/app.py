@@ -27,7 +27,8 @@ def add_product():
         return "Not logged in", 401
     
     product_url = request.form['product_url']
-    insert_user_products(user_id, product_url)
+    target_price = int(request.form['target_price'])
+    insert_user_products(user_id, product_url, target_price)
     return "Product added"
 
 if __name__ == '__main__':
