@@ -20,13 +20,7 @@ def send_price_alert(user_email, product_name, target_price, current_price):
     subject = f"Alert: {product_name} dropped to ${current_price}!"
     
     body = f"""
-    Hi,
-    
     Great news! {product_name} has dropped to your target price of ${target_price}.
-    
-    Current Price: ${current_price}
-    Target Price: ${target_price}
-    
     Check it out before it runs out!
     
     Best regards,
