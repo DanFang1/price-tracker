@@ -24,6 +24,7 @@ def price_refresher():
 
 
 def check_and_notify_targets():
+    """Check for products that hit target prices and notify users"""
     query = """
     SELECT u.email, p.product_url, p.current_price, ut.target_price, p.product_name, ut.user_item_id
     FROM usertrackeditems ut
@@ -45,3 +46,22 @@ def check_and_notify_targets():
                 cur.execute(update_query, (user_item_id,))
                 conn.commit()
                 print(f"Notification sent to {email} for {product_name}")
+
+
+def reset_notified_prices():
+    """Reset notified flag if price went up above target"""
+    query = """
+    UPDATE usertrackeditems SET notified = FALSE WHERE notified = TRUE 
+    AND target_price < (
+        SELECT current_price FROM products 
+        WHERE products.product_id = usertrackeditems.user_item_id
+    );
+    """
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query)
+            conn.commit()
+            print(f"Reset {cur.rowcount} items")
+    
+    

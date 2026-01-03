@@ -6,8 +6,10 @@ from database import insert_user_products
 from database import get_connection
 import scraper as scraper
 
+
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_KEY")
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -19,7 +21,8 @@ def login():
         session['user_id'] = user_id
         return "Logged in successfully"
     except ValueError as e:
-        return str(e)
+        return render_template('login.html', error=str(e))
+
 
 @app.route('/add_product', methods=['POST'])
 def add_product():
