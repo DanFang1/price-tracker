@@ -2,7 +2,6 @@ from database import get_connection
 import scraper as scraper
 from notifications import send_price_alert
 
-
 def price_refresher():
     "Refreshes current prices of all products in the database"
     select_query = "SELECT product_url from products;"
