@@ -1,7 +1,7 @@
 # app.py
 import os
 from flask import Flask, session, request, render_template
-from auth import login_user
+from auth import login_user, register_user
 from database import insert_user_products
 from database import get_connection
 import scraper as scraper
@@ -9,6 +9,20 @@ import scraper as scraper
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_KEY")
+
+
+@app.route('/register', methods=['POST'])
+def register():
+    username = request.form['username']
+    email = request.form['email']
+    password = request.form['password']
+    
+    try:
+        user_id = register_user(username, email, password)
+        session['user_id'] = user_id
+        return "Registered successfully"
+    except ValueError as e:
+        return render_template('register.html', error=str(e))
 
 
 @app.route('/login', methods=['POST'])
