@@ -132,5 +132,43 @@ def add_product():
     return "Product added"
 
 
+@app.route('/delete_product', methods=['POST'])
+def delete_product():
+    user_id = session.get('user_id')
+    
+    if not user_id:
+        return "Not logged in", 401
+    
+    # Get the product ID from the request
+    if 'product_id' not in request.form:
+        return "Product ID is required", 400
+    
+    try:
+        product_id = int(request.form['product_id'])
+    except ValueError:
+        return "Invalid product ID", 400
+    
+    # Verify the product belongs to the user before deleting
+    query_verify = """
+    SELECT 1 FROM usertrackeditems 
+    WHERE user_item_id = %s AND utt_user_id = %s;
+    """
+    
+    query_delete = "DELETE FROM usertrackeditems WHERE user_item_id = %s;"
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # Check ownership
+            cur.execute(query_verify, (product_id, user_id))
+            if not cur.fetchone():
+                return "Product not found or unauthorized", 403
+            
+            # Delete the product
+            cur.execute(query_delete, (product_id,))
+            conn.commit()
+    
+    return "Product deleted successfully"
+
+
 if __name__ == '__main__':
     app.run(debug=True)
