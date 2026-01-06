@@ -2,6 +2,11 @@ from database import get_connection
 import scraper as scraper
 from notifications import send_price_alert
 from apscheduler.schedulers.background import BackgroundScheduler
+import threading
+
+# Global scheduler instance and lock for thread-safe initialization
+_scheduler = None
+_scheduler_lock = threading.Lock()
 
 def price_refresher():
     "Refreshes current prices of all products in the database"
@@ -66,20 +71,39 @@ def reset_notified_prices():
             print(f"Reset {cur.rowcount} items")
 
 
+def get_scheduler():
+    """Get the current scheduler instance without starting it"""
+    return _scheduler
+
+
 def start_scheduler():
-    """Initialize and start the background scheduler for price updates and notifications"""
-    scheduler = BackgroundScheduler()
+    """Initialize and start the background scheduler for price updates and notifications.
+    Uses singleton pattern to prevent multiple schedulers from running concurrently."""
+    global _scheduler
     
-    # Run price refresher every 30 minutes
-    scheduler.add_job(price_refresher, 'interval', minutes=30, id='price_refresher')
+    # Double-checked locking pattern for thread safety
+    if _scheduler is not None and _scheduler.running:
+        print("Scheduler already running")
+        return _scheduler
     
-    # Check and notify every 30 minutes
-    scheduler.add_job(check_and_notify_targets, 'interval', minutes=30, id='check_targets')
+    with _scheduler_lock:
+        # Check again inside the lock in case another thread started it
+        if _scheduler is not None and _scheduler.running:
+            print("Scheduler already running")
+            return _scheduler
+        
+        _scheduler = BackgroundScheduler()
+        
+        # Run price refresher every 30 minutes
+        _scheduler.add_job(price_refresher, 'interval', minutes=30, id='price_refresher')
+        
+        # Check and notify every 30 minutes
+        _scheduler.add_job(check_and_notify_targets, 'interval', minutes=30, id='check_targets')
+        
+        # Reset notified prices every hour
+        _scheduler.add_job(reset_notified_prices, 'interval', minutes=60, id='reset_notified')
+        
+        _scheduler.start()
+        print("Scheduler started: price updates every 30 minutes")
     
-    # Reset notified prices every hour
-    scheduler.add_job(reset_notified_prices, 'interval', minutes=60, id='reset_notified')
-    
-    scheduler.start()
-    print("Scheduler started: price updates every 30 minutes")
-    
-    return scheduler
+    return _scheduler
