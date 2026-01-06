@@ -170,7 +170,7 @@ def delete_product():
     return "Product deleted successfully"
 
 
-@app.route('/dashboard')
+@app.route('/dashboard', methods=['GET'])
 def dashboard():
     user_id = session.get('user_id')
 
