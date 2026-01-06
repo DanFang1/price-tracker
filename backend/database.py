@@ -57,16 +57,20 @@ def insert_user_products(user_id, product_url, target_price):
                     """
                     INSERT INTO usertrackeditems (user_item_id, utt_user_id, target_price)
                     VALUES (%s, %s, %s)
-                    RETURNING product_id;
+                    RETURNING user_item_id;
                     """
                 )
                 cur.execute(query2, (product_id, user_id, target_price))
+                user_item_id = cur.fetchone()[0]
                 conn.commit()
                 print(f"User item inserted for user {user_id}")
+                
+                return user_item_id
                 
             except IntegrityError as e:
                 conn.rollback()
                 print(f"Error inserting product: {e}")
+                return None
 
 
 def check_duplicate_product(product_url: str) -> bool:

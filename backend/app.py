@@ -53,7 +53,7 @@ def register():
     try:
         user_id = register_user(username, email, password)
         session['user_id'] = user_id
-        return "Registered successfully"
+        return redirect('/dashboard')
     except ValueError as e:
         return render_template('register.html', error=str(e)), 400
     
@@ -77,7 +77,7 @@ def login():
     try:
         user_id = login_user(username, password)
         session['user_id'] = user_id
-        return "Logged in successfully"
+        return redirect('/dashboard')
     except ValueError as e:
         return render_template('login.html', error=str(e)), 401
     
@@ -132,11 +132,11 @@ def add_product():
                              product_url=product_url,
                              current_price=current_price), 400
 
-    insert_user_products(user_id, product_url, target_price)
+    user_item_id = insert_user_products(user_id, product_url, target_price)
 
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(query1, (user_id,))
+            cur.execute(query1, (user_item_id,))
             conn.commit()
 
     return "Product added"
