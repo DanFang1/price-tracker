@@ -56,6 +56,11 @@ def register():
         return "Registered successfully"
     except ValueError as e:
         return render_template('register.html', error=str(e)), 400
+    
+
+@app.route('/register', methods=['GET'])
+def register_form():
+    return render_template('register.html')
 
 
 @app.route('/login', methods=['POST'])
@@ -75,6 +80,11 @@ def login():
         return "Logged in successfully"
     except ValueError as e:
         return render_template('login.html', error=str(e)), 401
+    
+
+@app.route('/login', methods=['GET'])
+def login_form():
+    return render_template('login.html')
 
 
 @app.route('/add_product', methods=['POST'])
@@ -130,6 +140,11 @@ def add_product():
             conn.commit()
 
     return "Product added"
+
+
+@app.route('/add_product', methods=['GET'])
+def add_product_form():
+    return render_template('add_product.html')
 
 
 @app.route('/delete_product', methods=['POST'])
