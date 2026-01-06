@@ -1,6 +1,7 @@
 from database import get_connection
 import scraper as scraper
 from notifications import send_price_alert
+from apscheduler.schedulers.background import BackgroundScheduler
 
 def price_refresher():
     "Refreshes current prices of all products in the database"
@@ -63,5 +64,22 @@ def reset_notified_prices():
             cur.execute(query)
             conn.commit()
             print(f"Reset {cur.rowcount} items")
+
+
+def start_scheduler():
+    """Initialize and start the background scheduler for price updates and notifications"""
+    scheduler = BackgroundScheduler()
     
+    # Run price refresher every 30 minutes
+    scheduler.add_job(price_refresher, 'interval', minutes=30, id='price_refresher')
     
+    # Check and notify every 30 minutes
+    scheduler.add_job(check_and_notify_targets, 'interval', minutes=30, id='check_targets')
+    
+    # Reset notified prices every hour
+    scheduler.add_job(reset_notified_prices, 'interval', minutes=60, id='reset_notified')
+    
+    scheduler.start()
+    print("Scheduler started: price updates every 30 minutes")
+    
+    return scheduler
