@@ -6,7 +6,7 @@ from auth import login_user, register_user
 from database import insert_user_products
 from database import get_connection
 import scraper as scraper
-
+from flask import redirect
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_KEY")
@@ -168,6 +168,29 @@ def delete_product():
             conn.commit()
     
     return "Product deleted successfully"
+
+
+@app.route('/dashboard')
+def dashboard():
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return "Not logged in", 401
+    
+    # Query database for user's products
+    query = """
+    SELECT ut.user_item_id, p.product_name, p.current_price, ut.target_price
+    FROM usertrackeditems ut
+    JOIN products p ON ut.user_item_id = p.product_id
+    WHERE ut.utt_user_id = %s
+    """
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (user_id,))
+            products = cur.fetchall()
+    
+    return render_template('dashboard.html', products=products)
 
 
 if __name__ == '__main__':
