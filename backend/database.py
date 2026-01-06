@@ -24,46 +24,45 @@ def get_connection():
 
 
 def insert_user_products(user_id, product_url, target_price):
-    "Inserts a new product into the products table based on product URL, then links to user"
-    
-    # Check if product already exists
-    product_exists = check_duplicate_product(product_url)
+    """""Inserts a new product into the products table based on product URL, then links to user.
+    Uses INSERT...ON CONFLICT to safely handle multiple concurrent processes."""
     
     with get_connection() as conn:
         with conn.cursor() as cur:
             try:
-                # If product doesn't exist, insert it first (query1)
-                if not product_exists:
-                    product = scraper.return_dict(product_url)
-                    query1 = sql.SQL(
-                        """
-                        INSERT INTO products (product_url, product_name, current_price)
-                        VALUES (%s, %s, %s)
-                        RETURNING product_id;
-                        """
-                    )
-                    cur.execute(query1, (product["product_url"], product["product_name"], product["product_price"]))
-                    product_id = cur.fetchone()[0]
-                    conn.commit()
-                    print(f"Product inserted with ID: {product_id}")
-                else:
-                    # Product exists, get its ID
-                    get_id_query = "SELECT product_id FROM products WHERE product_url = %s;"
-                    cur.execute(get_id_query, (product_url,))
-                    product_id = cur.fetchone()[0]
+                # Fetch product data
+                product = scraper.return_dict(product_url)
                 
-                # Insert into usertrackeditems (query2)
-                query2 = sql.SQL(
+                # Atomically insert product or get existing one using ON CONFLICT
+                # This prevents race conditions when multiple processes insert simultaneously
+                upsert_query = sql.SQL(
+                    """
+                    INSERT INTO products (product_url, product_name, current_price)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (product_url) 
+                    DO UPDATE SET current_price = EXCLUDED.current_price
+                    RETURNING product_id;
+                    """
+                )
+                cur.execute(upsert_query, (product["product_url"], product["product_name"], product["product_price"]))
+                product_id = cur.fetchone()[0]
+                conn.commit()
+                print(f"Product ensured with ID: {product_id}")
+                
+                # Insert into usertrackeditems (ON CONFLICT handles duplicate user-product pairs)
+                user_tracking_query = sql.SQL(
                     """
                     INSERT INTO usertrackeditems (user_item_id, utt_user_id, target_price)
                     VALUES (%s, %s, %s)
+                    ON CONFLICT (user_item_id, utt_user_id) 
+                    DO UPDATE SET target_price = EXCLUDED.target_price
                     RETURNING user_item_id;
                     """
                 )
-                cur.execute(query2, (product_id, user_id, target_price))
+                cur.execute(user_tracking_query, (product_id, user_id, target_price))
                 user_item_id = cur.fetchone()[0]
                 conn.commit()
-                print(f"User item inserted for user {user_id}")
+                print(f"User item upserted for user {user_id}")
                 
                 return user_item_id
                 
@@ -71,18 +70,6 @@ def insert_user_products(user_id, product_url, target_price):
                 conn.rollback()
                 print(f"Error inserting product: {e}")
                 return None
-
-
-def check_duplicate_product(product_url: str) -> bool:
-    "Checks if the product already exists in the products table"
-    query = "SELECT EXISTS(SELECT 1 FROM products WHERE product_url = %s);"
-    
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(query, (product_url,))
-            exists = cur.fetchone()[0]
-            return exists
-
 
 def check_connection() -> bool:
     "Checks if database connection is successful"
