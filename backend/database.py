@@ -71,6 +71,7 @@ def insert_user_products(user_id, product_url, target_price):
                 print(f"Error inserting product: {e}")
                 return None
 
+
 def check_connection() -> bool:
     "Checks if database connection is successful"
     try:
