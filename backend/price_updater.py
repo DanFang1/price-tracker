@@ -202,6 +202,5 @@ def start_scheduler():
         )
         
         _scheduler.start()
-        print("Scheduler started: price updates every 30 minutes")
     
     return _scheduler
