@@ -166,13 +166,40 @@ def start_scheduler():
         _scheduler = BackgroundScheduler()
         
         # Run price refresher every 30 minutes
-        _scheduler.add_job(price_refresher, 'interval', minutes=30, id='price_refresher')
+        # max_instances=1: prevents overlapping executions if job takes too long
+        # coalesce=True: skips queued runs if scheduler falls behind
+        # misfire_grace_time=60: allows up to 60 seconds late before skipping
+        _scheduler.add_job(
+            price_refresher, 
+            'interval', 
+            minutes=30, 
+            id='price_refresher',
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60
+        )
         
         # Check and notify every 30 minutes
-        _scheduler.add_job(check_and_notify_targets, 'interval', minutes=30, id='check_targets')
+        _scheduler.add_job(
+            check_and_notify_targets, 
+            'interval', 
+            minutes=30, 
+            id='check_targets',
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60
+        )
         
         # Reset notified prices every hour
-        _scheduler.add_job(reset_notified_prices, 'interval', minutes=60, id='reset_notified')
+        _scheduler.add_job(
+            reset_notified_prices, 
+            'interval', 
+            minutes=60, 
+            id='reset_notified',
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60
+        )
         
         _scheduler.start()
         print("Scheduler started: price updates every 30 minutes")
