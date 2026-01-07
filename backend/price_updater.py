@@ -4,46 +4,62 @@ from notifications import send_price_alert
 from apscheduler.schedulers.background import BackgroundScheduler
 import threading
 import time
+import hashlib
 
 # Global scheduler instance and lock for thread-safe initialization
 _scheduler = None
 _scheduler_lock = threading.Lock()
 
-# Database-based distributed lock for multi-process coordination
+def _get_lock_id(lock_name: str) -> int:
+    """Convert lock name to a stable integer ID for PostgreSQL advisory locks.
+    Uses CRC32 hash to convert string to 32-bit integer."""
+    return int(hashlib.md5(lock_name.encode()).hexdigest()[:8], 16) & 0x7FFFFFFF
+
+
 def acquire_distributed_lock(lock_name: str, timeout_seconds: int = 30) -> bool:
-    """Acquire a distributed lock in the database. Returns True if lock acquired."""
+    """Acquire a PostgreSQL advisory lock. Returns True if lock acquired.
+    Advisory locks are automatically released when the connection closes,
+    preventing stale locks."""
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
-                # Create locks table if it doesn't exist
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS distributed_locks (
-                        lock_name VARCHAR(255) PRIMARY KEY,
-                        acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """)
-                conn.commit()
+                lock_id = _get_lock_id(lock_name)
                 
-                # Try to insert lock (will fail if already exists)
+                # Try to acquire exclusive advisory lock with timeout
+                # pg_try_advisory_lock returns true/false immediately without waiting
                 cur.execute(
-                    "INSERT INTO distributed_locks (lock_name) VALUES (%s);",
-                    (lock_name,)
+                    "SELECT pg_try_advisory_lock(%s);",
+                    (lock_id,)
                 )
-                conn.commit()
-                return True
+                acquired = cur.fetchone()[0]
+                
+                if acquired:
+                    conn.commit()
+                    return True
+                else:
+                    return False
     except Exception as e:
+        print(f"Error acquiring advisory lock: {e}")
         return False
 
 
 def release_distributed_lock(lock_name: str) -> bool:
-    """Release a distributed lock."""
+    """Release a PostgreSQL advisory lock.
+    Note: Advisory locks are automatically released when the connection closes,
+    but this explicitly releases it to free resources faster."""
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM distributed_locks WHERE lock_name = %s;", (lock_name,))
+                lock_id = _get_lock_id(lock_name)
+                cur.execute(
+                    "SELECT pg_advisory_unlock(%s);",
+                    (lock_id,)
+                )
+                released = cur.fetchone()[0]
                 conn.commit()
-                return True
-    except Exception:
+                return released
+    except Exception as e:
+        print(f"Error releasing advisory lock: {e}")
         return False
 
 def price_refresher():
