@@ -1,20 +1,10 @@
 from database import get_connection
 import scraper as scraper
 from notifications import send_price_alert
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-import logging
 
-# Global scheduler instance
-_scheduler = None
-
-# Configure logging for APScheduler
-logging.basicConfig()
-logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 def price_refresher():
-    """Refreshes current prices of all products in the database.
-    Runs via cron job without locks - APScheduler ensures only one instance runs."""
+    """Refreshes current prices of all products in the database."""
     try:
         select_query = "SELECT product_url from products;"
         check_query = "SELECT current_price from products WHERE product_url = %s;"
@@ -35,11 +25,11 @@ def price_refresher():
                         print(f"Price updated for {product_urls}")
     except Exception as e:
         print(f"Error in price_refresher: {e}")
+        raise
 
 
 def check_and_notify_targets():
-    """Check for products that hit target prices and notify users.
-    Runs via cron job without locks - APScheduler ensures only one instance runs."""
+    """Check for products that hit target prices and notify users."""
     try:
         query = """
         SELECT u.email, p.product_url, p.current_price, ut.target_price, p.product_name, ut.user_item_id
@@ -64,11 +54,11 @@ def check_and_notify_targets():
                     print(f"Notification sent to {email} for {product_name}")
     except Exception as e:
         print(f"Error in check_and_notify_targets: {e}")
+        raise
 
 
 def reset_notified_prices():
-    """Reset notified flag if price went up above target.
-    Runs via cron job without locks - APScheduler ensures only one instance runs."""
+    """Reset notified flag if price went up above target."""
     try:
         query = """
         UPDATE usertrackeditems SET notified = FALSE WHERE notified = TRUE 
@@ -85,57 +75,25 @@ def reset_notified_prices():
                 print(f"Reset {cur.rowcount} items")
     except Exception as e:
         print(f"Error in reset_notified_prices: {e}")
+        raise
 
 
-def get_scheduler():
-    """Get the current scheduler instance"""
-    return _scheduler
-
-
-def start_scheduler():
-    """Initialize and start the background scheduler with cron-based jobs.
+if __name__ == "__main__":
+    import sys
     
-    Jobs:
-    - price_refresher: Runs every 30 minutes at :00 and :30
-    - check_and_notify_targets: Runs every 30 minutes at :00 and :30
-    - reset_notified_prices: Runs every hour at :00
-    """
-    global _scheduler
+    if len(sys.argv) < 2:
+        print("Usage: python price_updater.py <job_name>")
+        print("Available jobs: refresh_prices, check_targets, reset_notified")
+        sys.exit(1)
     
-    if _scheduler is not None and _scheduler.running:
-        print("Scheduler already running")
-        return _scheduler
+    job_name = sys.argv[1]
     
-    _scheduler = BackgroundScheduler()
-    
-    # Price refresher: Every 30 minutes (at :00 and :30)
-    _scheduler.add_job(
-        price_refresher, 
-        CronTrigger(minute='0,30'),
-        id='price_refresher',
-        name='Price Refresher',
-        replace_existing=True
-    )
-    
-    # Check and notify targets: Every 30 minutes (at :00 and :30)
-    _scheduler.add_job(
-        check_and_notify_targets, 
-        CronTrigger(minute='0,30'),
-        id='check_targets',
-        name='Check and Notify Targets',
-        replace_existing=True
-    )
-    
-    # Reset notified prices: Every hour at :00
-    _scheduler.add_job(
-        reset_notified_prices, 
-        CronTrigger(minute='0'),
-        id='reset_notified',
-        name='Reset Notified Prices',
-        replace_existing=True
-    )
-    
-    _scheduler.start()
-    print("Scheduler started with cron-based jobs")
-    
-    return _scheduler
+    if job_name == "refresh_prices":
+        price_refresher()
+    elif job_name == "check_targets":
+        check_and_notify_targets()
+    elif job_name == "reset_notified":
+        reset_notified_prices()
+    else:
+        print(f"Unknown job: {job_name}")
+        sys.exit(1)
