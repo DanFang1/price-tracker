@@ -45,4 +45,4 @@ jobs:
       
       - name: Check targets and notify
         run: |
-          cd backend && python price_updater.py check_targets
+          cd backend && python price_updater.py check_and_notify_targets

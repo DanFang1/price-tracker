@@ -39,4 +39,4 @@ jobs:
       
       - name: Run price refresher
         run: |
-          cd backend && python price_updater.py refresh_prices
+          cd backend && python price_updater.py price_refresher

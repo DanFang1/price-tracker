@@ -39,4 +39,4 @@ jobs:
       
       - name: Reset notified prices
         run: |
-          cd backend && python price_updater.py reset_notified
+          cd backend && python price_updater.py reset_notified_prices
