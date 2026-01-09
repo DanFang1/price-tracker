@@ -7,9 +7,13 @@ from database import insert_user_products
 from database import get_connection
 import scraper as scraper
 from flask import redirect
+from price_updater import start_scheduler
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_KEY")
+
+# Start the cron job scheduler when the app initializes
+start_scheduler()
 
 
 def is_valid_email(email):

@@ -2,76 +2,19 @@ from database import get_connection
 import scraper as scraper
 from notifications import send_price_alert
 from apscheduler.schedulers.background import BackgroundScheduler
-import threading
-import time
-import hashlib
+from apscheduler.triggers.cron import CronTrigger
+import logging
 
-# Global scheduler instance and lock for thread-safe initialization
+# Global scheduler instance
 _scheduler = None
-_scheduler_lock = threading.Lock()
 
-def _get_lock_id(lock_name: str) -> int:
-    """Convert lock name to a stable integer ID for PostgreSQL advisory locks.
-    Uses CRC32 hash to convert string to 32-bit integer."""
-    return int(hashlib.md5(lock_name.encode()).hexdigest()[:8], 16) & 0x7FFFFFFF
-
-
-def acquire_distributed_lock(lock_name: str, timeout_seconds: int = 30) -> bool:
-    """Acquire a PostgreSQL advisory lock. Returns True if lock acquired.
-    Advisory locks are automatically released when the connection closes,
-    preventing stale locks."""
-    try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                lock_id = _get_lock_id(lock_name)
-                
-                # Try to acquire exclusive advisory lock with timeout
-                # pg_try_advisory_lock returns true/false immediately without waiting
-                cur.execute(
-                    "SELECT pg_try_advisory_lock(%s);",
-                    (lock_id,)
-                )
-                acquired = cur.fetchone()[0]
-                
-                if acquired:
-                    conn.commit()
-                    return True
-                else:
-                    return False
-    except Exception as e:
-        print(f"Error acquiring advisory lock: {e}")
-        return False
-
-
-def release_distributed_lock(lock_name: str) -> bool:
-    """Release a PostgreSQL advisory lock.
-    Note: Advisory locks are automatically released when the connection closes,
-    but this explicitly releases it to free resources faster."""
-    try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                lock_id = _get_lock_id(lock_name)
-                cur.execute(
-                    "SELECT pg_advisory_unlock(%s);",
-                    (lock_id,)
-                )
-                released = cur.fetchone()[0]
-                conn.commit()
-                return released
-    except Exception as e:
-        print(f"Error releasing advisory lock: {e}")
-        return False
+# Configure logging for APScheduler
+logging.basicConfig()
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 def price_refresher():
     """Refreshes current prices of all products in the database.
-    Uses distributed lock to prevent concurrent execution across multiple processes."""
-    lock_name = "price_refresher_lock"
-    
-    # Try to acquire lock; skip if another process is already running
-    if not acquire_distributed_lock(lock_name):
-        print("Price refresher already running in another process")
-        return
-    
+    Runs via cron job without locks - APScheduler ensures only one instance runs."""
     try:
         select_query = "SELECT product_url from products;"
         check_query = "SELECT current_price from products WHERE product_url = %s;"
@@ -90,20 +33,13 @@ def price_refresher():
                         cur.execute(update_query, (new_price, product_urls))
                         conn.commit()
                         print(f"Price updated for {product_urls}")
-    finally:
-        release_distributed_lock(lock_name)
+    except Exception as e:
+        print(f"Error in price_refresher: {e}")
 
 
 def check_and_notify_targets():
     """Check for products that hit target prices and notify users.
-    Uses distributed lock to prevent duplicate notifications across multiple processes."""
-    lock_name = "notify_targets_lock"
-    
-    # Try to acquire lock; skip if another process is already running
-    if not acquire_distributed_lock(lock_name):
-        print("Notification check already running in another process")
-        return
-    
+    Runs via cron job without locks - APScheduler ensures only one instance runs."""
     try:
         query = """
         SELECT u.email, p.product_url, p.current_price, ut.target_price, p.product_name, ut.user_item_id
@@ -126,20 +62,13 @@ def check_and_notify_targets():
                     cur.execute(update_query, (user_item_id,))
                     conn.commit()
                     print(f"Notification sent to {email} for {product_name}")
-    finally:
-        release_distributed_lock(lock_name)
+    except Exception as e:
+        print(f"Error in check_and_notify_targets: {e}")
 
 
 def reset_notified_prices():
     """Reset notified flag if price went up above target.
-    Uses distributed lock to prevent duplicate resets across multiple processes."""
-    lock_name = "reset_notified_lock"
-    
-    # Try to acquire lock; skip if another process is already running
-    if not acquire_distributed_lock(lock_name):
-        print("Reset notified already running in another process")
-        return
-    
+    Runs via cron job without locks - APScheduler ensures only one instance runs."""
     try:
         query = """
         UPDATE usertrackeditems SET notified = FALSE WHERE notified = TRUE 
@@ -154,69 +83,59 @@ def reset_notified_prices():
                 cur.execute(query)
                 conn.commit()
                 print(f"Reset {cur.rowcount} items")
-    finally:
-        release_distributed_lock(lock_name)
+    except Exception as e:
+        print(f"Error in reset_notified_prices: {e}")
 
 
 def get_scheduler():
-    """Get the current scheduler instance without starting it"""
+    """Get the current scheduler instance"""
     return _scheduler
 
 
 def start_scheduler():
-    """Initialize and start the background scheduler for price updates and notifications.
-    Uses singleton pattern to prevent multiple schedulers from running concurrently."""
+    """Initialize and start the background scheduler with cron-based jobs.
+    
+    Jobs:
+    - price_refresher: Runs every 30 minutes at :00 and :30
+    - check_and_notify_targets: Runs every 30 minutes at :00 and :30
+    - reset_notified_prices: Runs every hour at :00
+    """
     global _scheduler
     
-    # Double-checked locking pattern for thread safety
     if _scheduler is not None and _scheduler.running:
         print("Scheduler already running")
         return _scheduler
     
-    with _scheduler_lock:
-        # Check again inside the lock in case another thread started it
-        if _scheduler is not None and _scheduler.running:
-            print("Scheduler already running")
-            return _scheduler
-        
-        _scheduler = BackgroundScheduler()
-        
-        # Run price refresher every 30 minutes
-        # max_instances=1: prevents overlapping executions if job takes too long
-        # coalesce=True: skips queued runs if scheduler falls behind
-        # misfire_grace_time=60: allows up to 60 seconds late before skipping
-        _scheduler.add_job(
-            price_refresher, 
-            'interval', 
-            minutes=30, 
-            id='price_refresher',
-            max_instances=1,
-            coalesce=True,
-            misfire_grace_time=60
-        )
-        
-        # Check and notify every 30 minutes
-        _scheduler.add_job(
-            check_and_notify_targets, 
-            'interval', 
-            minutes=30, 
-            id='check_targets',
-            max_instances=1,
-            coalesce=True,
-            misfire_grace_time=60
-        )
-        
-        # Reset notified prices every hour
-        _scheduler.add_job(
-            reset_notified_prices, 
-            'interval', 
-            minutes=60, 
-            id='reset_notified',
-            max_instances=1,
-            coalesce=True,
-            misfire_grace_time=60
-        )
-        
-        _scheduler.start()
+    _scheduler = BackgroundScheduler()
+    
+    # Price refresher: Every 30 minutes (at :00 and :30)
+    _scheduler.add_job(
+        price_refresher, 
+        CronTrigger(minute='0,30'),
+        id='price_refresher',
+        name='Price Refresher',
+        replace_existing=True
+    )
+    
+    # Check and notify targets: Every 30 minutes (at :00 and :30)
+    _scheduler.add_job(
+        check_and_notify_targets, 
+        CronTrigger(minute='0,30'),
+        id='check_targets',
+        name='Check and Notify Targets',
+        replace_existing=True
+    )
+    
+    # Reset notified prices: Every hour at :00
+    _scheduler.add_job(
+        reset_notified_prices, 
+        CronTrigger(minute='0'),
+        id='reset_notified',
+        name='Reset Notified Prices',
+        replace_existing=True
+    )
+    
+    _scheduler.start()
+    print("Scheduler started with cron-based jobs")
     
     return _scheduler
