@@ -2,8 +2,8 @@ name: Reset Notified Prices
 
 on:
   schedule:
-    # Run every hour at :00
-    - cron: '0 * * * *'
+    # Run every hour at :10
+    - cron: '10 * * * *'
   workflow_dispatch:
 
 env:

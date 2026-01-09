@@ -3,7 +3,7 @@ name: Check and Notify Targets
 on:
   schedule:
     # Run every 30 minutes
-    - cron: '0,30 * * * *'
+    - cron: '5,35 * * * *'
   workflow_dispatch:
 
 env:
