@@ -1,4 +1,4 @@
-name: Refresh Prices
+name: Check and Notify Targets
 
 on:
   schedule:
@@ -12,13 +12,17 @@ env:
   DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
   DB_HOST: ${{ secrets.DB_HOST }}
   DB_PORT: ${{ secrets.DB_PORT }}
+  SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+  SMTP_PORT: ${{ secrets.SMTP_PORT }}
+  SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+  SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
 
 jobs:
-  refresh-prices:
-    name: Refresh Prices
+  check-targets:
+    name: Check and Notify Targets
     runs-on: ubuntu-latest
     concurrency:
-      group: refresh-prices
+      group: check-targets
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +36,6 @@ jobs:
         run: |
           pip install -r backend/requirements.txt
       
-      - name: Run price refresher
+      - name: Check targets and notify
         run: |
-          cd backend && python price_updater.py refresh_prices
+          cd backend && python price_updater.py check_targets

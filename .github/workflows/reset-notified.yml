@@ -1,9 +1,9 @@
-name: Refresh Prices
+name: Reset Notified Prices
 
 on:
   schedule:
-    # Run every 30 minutes
-    - cron: '0,30 * * * *'
+    # Run every hour at :00
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 env:
@@ -14,11 +14,11 @@ env:
   DB_PORT: ${{ secrets.DB_PORT }}
 
 jobs:
-  refresh-prices:
-    name: Refresh Prices
+  reset-notified:
+    name: Reset Notified Prices
     runs-on: ubuntu-latest
     concurrency:
-      group: refresh-prices
+      group: reset-notified
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +32,6 @@ jobs:
         run: |
           pip install -r backend/requirements.txt
       
-      - name: Run price refresher
+      - name: Reset notified prices
         run: |
-          cd backend && python price_updater.py refresh_prices
+          cd backend && python price_updater.py reset_notified
