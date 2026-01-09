@@ -81,19 +81,21 @@ def reset_notified_prices():
 if __name__ == "__main__":
     import sys
     
+    jobs = {
+        "refresh_prices": price_refresher,
+        "check_targets": check_and_notify_targets,
+        "reset_notified": reset_notified_prices,
+    }
+    
     if len(sys.argv) < 2:
         print("Usage: python price_updater.py <job_name>")
-        print("Available jobs: refresh_prices, check_targets, reset_notified")
+        print(f"Available jobs: {', '.join(jobs.keys())}")
         sys.exit(1)
     
     job_name = sys.argv[1]
     
-    if job_name == "refresh_prices":
-        price_refresher()
-    elif job_name == "check_targets":
-        check_and_notify_targets()
-    elif job_name == "reset_notified":
-        reset_notified_prices()
+    if job_name in jobs:
+        jobs[job_name]()
     else:
         print(f"Unknown job: {job_name}")
         sys.exit(1)
