@@ -63,6 +63,16 @@ def insert_user_products(user_id, product_url, target_price):
                 user_item_id = cur.fetchone()[0]
                 conn.commit()
                 print(f"User item upserted for user {user_id}")
+
+                # Insert initial price into price_history
+                price_history_query = sql.SQL(
+                    """
+                    INSERT INTO price_history (history_pid, recorded_price)
+                    VALUES (%s, %s)
+                    """
+                )
+                cur.execute(price_history_query, (product_id, product["product_price"]))
+                conn.commit()
                 
                 return user_item_id
                 

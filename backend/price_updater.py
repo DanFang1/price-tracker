@@ -9,6 +9,7 @@ def price_refresher():
         select_query = "SELECT product_url from products;"
         check_query = "SELECT current_price from products WHERE product_url = %s;"
         update_query = "UPDATE products SET current_price = %s WHERE product_url = %s;"
+        add_history_query = "INSERT INTO price_history (history_pid, recorded_price) VALUES ((SELECT product_id from products WHERE product_url = %s), %s)"
         
         with get_connection() as conn:
             with conn.cursor() as cur:
@@ -21,6 +22,7 @@ def price_refresher():
                     old_price = cur.fetchone()[0]
                     if new_price != old_price:
                         cur.execute(update_query, (new_price, product_urls))
+                        cur.execute(add_history_query, (product_urls, new_price))
                         conn.commit()
                         print(f"Price updated for {product_urls}")
     except Exception as e:
