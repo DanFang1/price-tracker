@@ -208,5 +208,24 @@ def dashboard():
     return render_template('dashboard.html', products=products)
 
 
+@app.route('/price_graph', methods=['GET'])
+def price_graph():
+    from price_history import createGraph
+    
+    product_id = request.args.get('product_id')
+    product_name = request.args.get('product_name')
+    
+    if not product_id or not product_name:
+        return "Product ID and name are required", 400
+    
+    try:
+        product_id = int(product_id)
+    except ValueError:
+        return "Invalid product ID", 400
+    
+    # Create and display the graph
+    createGraph(product_id, product_name)
+
+
 if __name__ == '__main__':
     app.run(debug=True)

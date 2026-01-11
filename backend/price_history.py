@@ -1,6 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
-from psycopg2 import sql
 from database import get_connection
 
 
