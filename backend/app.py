@@ -210,21 +210,40 @@ def dashboard():
 
 @app.route('/price_graph', methods=['GET'])
 def price_graph():
-    from price_history import createGraph
+    from database import get_connection
+    from flask import jsonify
     
     product_id = request.args.get('product_id')
-    product_name = request.args.get('product_name')
     
-    if not product_id or not product_name:
-        return "Product ID and name are required", 400
+    if not product_id:
+        return jsonify({"error": "Product ID is required"}), 400
     
     try:
         product_id = int(product_id)
     except ValueError:
-        return "Invalid product ID", 400
+        return jsonify({"error": "Invalid product ID"}), 400
     
-    # Create and display the graph
-    createGraph(product_id, product_name)
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT time_change, recorded_price FROM price_history WHERE history_pid = %s 
+        UNION ALL
+        SELECT CURRENT_DATE::timestamp, (SELECT current_price FROM products WHERE product_id = %s)
+        ORDER BY time_change ASC
+    """, (product_id, product_id))
+    
+    data = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
+    # Convert to list of dicts for JSON
+    points = [
+        {"date": row[0].isoformat(), "price": float(row[1])}
+        for row in data
+    ]
+    
+    return jsonify({"data": points})
 
 
 if __name__ == '__main__':

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from database import get_connection
 import scraper as scraper
 from notifications import send_price_alert
@@ -19,7 +20,7 @@ def price_refresher():
                 for (product_urls, ) in urls_list:
                     new_price = scraper.return_dict(product_urls)["product_price"]
                     cur.execute(check_query, (product_urls,))
-                    old_price = cur.fetchone()[0]
+                    old_price = Decimal(cur.fetchone()[0])
                     if new_price != old_price:
                         cur.execute(update_query, (new_price, product_urls))
                         cur.execute(add_history_query, (product_urls, new_price))

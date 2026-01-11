@@ -1,3 +1,4 @@
+from decimal import Decimal
 from playwright.sync_api import sync_playwright, TimeoutError
 import re
 
@@ -14,9 +15,10 @@ def find_products(page):
     else:
         price_element = price_element.inner_text().strip()
         price_clean = re.sub(r'[^\d\.]', '', price_element)
+        price_value = Decimal(price_clean)
         item_element = item_element.inner_text().strip()
     
-    return {"product_name": item_element, "product_price": price_clean}
+    return {"product_name": item_element, "product_price": price_value}
 
 def return_dict(url):
     """ return product name, price and, url as a dictionary"""
