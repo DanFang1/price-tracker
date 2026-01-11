@@ -64,13 +64,11 @@ def insert_user_products(user_id, product_url, target_price):
                 conn.commit()
                 print(f"User item upserted for user {user_id}")
 
-                # Insert initial price into price_history if it doesn't exist
+                # Insert initial price into price_history
                 price_history_query = sql.SQL(
                     """
                     INSERT INTO price_history (history_pid, recorded_price)
                     VALUES (%s, %s)
-                    ON CONFLICT (history_pid) 
-                    DO NOTHING
                     """
                 )
                 cur.execute(price_history_query, (product_id, product["product_price"]))
