@@ -227,10 +227,14 @@ def price_graph():
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT time_change, recorded_price FROM price_history WHERE history_pid = %s 
+        SELECT time_change AS t, recorded_price AS price
+        FROM price_history
+        WHERE history_pid = %s
         UNION ALL
-        SELECT CURRENT_DATE::timestamp, (SELECT current_price FROM products WHERE product_id = %s)
-        ORDER BY time_change ASC
+        SELECT NOW() AS t, current_price AS price
+        FROM products
+        WHERE product_id = %s
+        ORDER BY t ASC
     """, (product_id, product_id))
     
     data = cursor.fetchall()
