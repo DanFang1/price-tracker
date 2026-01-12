@@ -2,6 +2,7 @@
 import os
 import re
 from flask import Flask, session, request, render_template
+from flask_cors import CORS
 from auth import login_user, register_user
 from database import insert_user_products
 from database import get_connection
@@ -10,6 +11,7 @@ from flask import redirect
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_KEY")
+CORS(app, supports_credentials=True)
 
 
 def is_valid_email(email):
