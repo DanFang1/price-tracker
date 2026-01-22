@@ -1,11 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:5000';
-
-const client = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true, // Enable cookies for session
-});
+import client from './client';
 
 export const getDashboard = () => {
   return client.get('/dashboard');
@@ -27,5 +20,3 @@ export const deleteProduct = (productId) => {
   formData.append('product_id', productId);
   return client.post('/delete_product', formData);
 };
-
-export default client;
