@@ -96,7 +96,7 @@ def add_product():
     """
 
     user_id = session.get('user_id')
-    
+
     if not user_id:
         return "Not logged in", 401
     
