@@ -43,15 +43,15 @@ def register():
     
     # Validate username length
     if len(username) < 3 or len(username) > 50:
-        return render_template('register.html', error="Username must be between 3 and 50 characters"), 400
+        return jsonify({"error": "Username must be between 3 and 50 characters"}), 400
     
     # Validate email format
     if not is_valid_email(email):
-        return render_template('register.html', error="Invalid email format"), 400
+        return jsonify({"error": "Invalid email format"}), 400
     
     # Validate password strength
     if len(password) < 6:
-        return render_template('register.html', error="Password must be at least 6 characters"), 400
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
     
     try:
         user_id = register_user(username, email, password)
@@ -65,9 +65,9 @@ def register():
 def login():
     # Validate required fields
     if 'username' not in request.form or not request.form['username'].strip():
-        return render_template('login.html', error="Username is required"), 400
+        return jsonify({"error": "Username is required"}), 400
     if 'password' not in request.form or not request.form['password'].strip():
-        return render_template('login.html', error="Password is required"), 400
+        return jsonify({"error": "Password is required"}), 400
     
     username = request.form['username'].strip()
     password = request.form['password']
@@ -89,41 +89,35 @@ def add_product():
     user_id = session.get('user_id')
 
     if not user_id:
-        return "Not logged in", 401
+        return jsonify({"error": "Not logged in"}), 401
     
     # Validate required fields
     if 'product_url' not in request.form or not request.form['product_url'].strip():
-        return render_template('add_product.html', error="Product URL is required"), 400
+        return jsonify({"error": "Product URL is required"}), 400
     if 'target_price' not in request.form or not request.form['target_price'].strip():
-        return render_template('add_product.html', error="Target price is required"), 400
+        return jsonify({"error": "Target price is required"}), 400
     
     product_url = request.form['product_url'].strip()
     
     # Validate URL format
     if not is_valid_url(product_url):
-        return render_template('add_product.html', error="Invalid URL format. URL must start with http:// or https://", 
-                             product_url=product_url), 400
+        return jsonify({"error": "Invalid URL format. URL must start with http:// or https://"}), 400
     
     # Validate target price is a valid number
     try:
         target_price = float(request.form['target_price'])
     except ValueError:
-        return render_template('add_product.html', error="Target price must be a valid number",
-                             product_url=product_url), 400
+        return jsonify({"error": "Target price must be a valid number"}), 400
     
     # Validate target price is positive
     if target_price <= 0:
-        return render_template('add_product.html', error="Target price must be greater than 0",
-                             product_url=product_url), 400
+        return jsonify({"error": "Target price must be greater than 0"}), 400
 
     product = scraper.return_dict(product_url)
     current_price = product["product_price"]
 
     if target_price >= current_price:
-        return render_template('add_product.html', 
-                             error="Target price must be less than current price",
-                             product_url=product_url,
-                             current_price=current_price), 400
+        return jsonify({"error": "Target price must be less than current price"}), 400
 
     user_item_id = insert_user_products(user_id, product_url, target_price)
 
@@ -132,7 +126,7 @@ def add_product():
             cur.execute(query1, (user_item_id,))
             conn.commit()
 
-    return "Product added"
+    return jsonify({"message": "Product added successfully"}), 200
 
 
 @app.route('/delete_product', methods=['POST'])
@@ -193,7 +187,7 @@ def dashboard():
             cur.execute(query, (user_id,))
             products = cur.fetchall()
     
-    return render_template('dashboard.html', products=products)
+    return jsonify({"products": products}), 200
 
 
 @app.route('/price_graph', methods=['GET'])
