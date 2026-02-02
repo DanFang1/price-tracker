@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDashboard, deleteProduct, addProduct } from '../api/client';
+import { getDashboard, deleteProduct, addProduct } from '../api/products';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -44,7 +44,7 @@ export default function Dashboard() {
   };
 
   const handleDeleteProduct = async (productId) => {
-    if (window.confirm('Are you sure?')) {
+    if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await deleteProduct(productId);
         fetchProducts();
