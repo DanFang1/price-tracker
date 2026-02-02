@@ -1,13 +1,12 @@
 # app.py
 import os
 import re
-from flask import Flask, jsonify, session, request, render_template
+from flask import Flask, jsonify, session, request
 from flask_cors import CORS
 from auth import login_user, register_user
 from database import insert_user_products
 from database import get_connection
 import scraper as scraper
-from flask import redirect
 
 
 app = Flask(__name__)
