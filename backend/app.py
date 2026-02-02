@@ -1,13 +1,14 @@
 # app.py
 import os
 import re
-from flask import Flask, session, request, render_template
+from flask import Flask, jsonify, session, request, render_template
 from flask_cors import CORS
 from auth import login_user, register_user
 from database import insert_user_products
 from database import get_connection
 import scraper as scraper
 from flask import redirect
+
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_KEY")
@@ -30,11 +31,11 @@ def is_valid_url(url):
 def register():
     # Validate required fields
     if 'username' not in request.form or not request.form['username'].strip():
-        return render_template('register.html', error="Username is required"), 400
+        return jsonify({"error": "Username is required"}), 400
     if 'email' not in request.form or not request.form['email'].strip():
-        return render_template('register.html', error="Email is required"), 400
+        return jsonify({"error": "Email is required"}), 400
     if 'password' not in request.form or not request.form['password'].strip():
-        return render_template('register.html', error="Password is required"), 400
+        return jsonify({"error": "Password is required"}), 400
     
     username = request.form['username'].strip()
     email = request.form['email'].strip()
@@ -55,14 +56,9 @@ def register():
     try:
         user_id = register_user(username, email, password)
         session['user_id'] = user_id
-        return redirect('/dashboard')
+        return jsonify({"message": "Registration successful"}), 200
     except ValueError as e:
-        return render_template('register.html', error=str(e)), 400
-    
-
-@app.route('/register', methods=['GET'])
-def register_form():
-    return render_template('register.html')
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route('/login', methods=['POST'])
@@ -79,14 +75,9 @@ def login():
     try:
         user_id = login_user(username, password)
         session['user_id'] = user_id
-        return redirect('/dashboard')
+        return jsonify({"message": "Login successful"}), 200
     except ValueError as e:
-        return render_template('login.html', error=str(e)), 401
-    
-
-@app.route('/login', methods=['GET'])
-def login_form():
-    return render_template('login.html')
+        return jsonify({"error": str(e)}), 401
 
 
 @app.route('/add_product', methods=['POST'])
@@ -144,26 +135,21 @@ def add_product():
     return "Product added"
 
 
-@app.route('/add_product', methods=['GET'])
-def add_product_form():
-    return render_template('add_product.html')
-
-
 @app.route('/delete_product', methods=['POST'])
 def delete_product():
     user_id = session.get('user_id')
     
     if not user_id:
-        return "Not logged in", 401
+        return jsonify({"error": "Not logged in"}), 401
     
     # Get the product ID from the request
     if 'product_id' not in request.form:
-        return "Product ID is required", 400
+        return jsonify({"error": "Product ID is required"}), 400
     
     try:
         product_id = int(request.form['product_id'])
     except ValueError:
-        return "Invalid product ID", 400
+        return jsonify({"error": "Invalid product ID"}), 400
     
     # Verify the product belongs to the user before deleting
     query_verify = """
@@ -178,13 +164,13 @@ def delete_product():
             # Check ownership
             cur.execute(query_verify, (product_id, user_id))
             if not cur.fetchone():
-                return "Product not found or unauthorized", 403
+                return jsonify({"error": "Product not found or unauthorized"}), 403
             
             # Delete the product
             cur.execute(query_delete, (product_id,))
             conn.commit()
     
-    return "Product deleted successfully"
+    return jsonify({"message": "Product deleted successfully"}), 200
 
 
 @app.route('/dashboard', methods=['GET'])
@@ -192,7 +178,7 @@ def dashboard():
     user_id = session.get('user_id')
 
     if not user_id:
-        return "Not logged in", 401
+        return jsonify({"error": "Not logged in"}), 401
     
     # Query database for user's products
     query = """
