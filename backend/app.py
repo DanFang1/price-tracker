@@ -53,7 +53,7 @@ def register():
         return jsonify({"error": "Password must be at least 6 characters"}), 400
     
     try:
-        user_id = register_user(username, email, password)
+        user_id = register_user(username, password, email)
         session['user_id'] = user_id
         return jsonify({"message": "Registration successful"}), 200
     except ValueError as e:

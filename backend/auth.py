@@ -14,7 +14,7 @@ def verify_password(plain_password: str, hashed_password:str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def register_user(username: str, email: str, password: str) -> int:
+def register_user(username: str, password: str, email: str) -> int:
     "Registers a new user into the accounts table and returns the user ID"
     hashed_pwd = hash_password(password)
 
@@ -39,10 +39,11 @@ def register_user(username: str, email: str, password: str) -> int:
 
 def login_user(username: str, password: str) -> bool:
     "Verifies user credentials for login"
-    query = sql.SQL("""
+    query = sql.SQL(
+        """
         SELECT user_id, hash_password FROM accounts WHERE username = %s;
-    """)
-
+        """
+    )
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, (username,))
@@ -58,21 +59,6 @@ def login_user(username: str, password: str) -> bool:
 
     return user_id
     
-if __name__ == "__main__":
-    from database import check_connection
-    check_connection()
-
-    try:
-        uid = register_user("ashwini", "ashwini@example.com", "ashwinipass6769")
-        print(f"Registered user {uid}")
-    except ValueError as e:
-        print(f"Registered failed: {e}")
-
-    try:
-        uid = login_user("ashwini", "ashwinipass6769")
-        print(f"User {uid} logged in successfully.")
-    except ValueError as e:
-        print(f"Login failed: {e}")
 
         
 
