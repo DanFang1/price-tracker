@@ -7,10 +7,10 @@ export const login = (username, password) => {
   return client.post('/login', formData);
 };
 
-export const register = (username, email, password) => {
+export const register = (username, password, email) => {
   const formData = new FormData();
   formData.append('username', username);
-  formData.append('email', email);
   formData.append('password', password);
+  formData.append('email', email);
   return client.post('/register', formData);
 };
