@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 import scraper as scraper
 
+
 load_dotenv()
 
 DB_NAME = os.getenv('DB_NAME')
@@ -94,4 +95,4 @@ def check_connection() -> bool:
         print(f"Database connection failed: {e}")
         return False
                 
-
+print(check_connection())

@@ -20,7 +20,17 @@ export default function Register() {
       await register(username, password, email);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data || 'Registration failed. Try again.');
+      // Show backend error details if available
+      if (err.response && err.response.data) {
+        // If backend returns an object with error property
+        if (typeof err.response.data === 'object' && err.response.data.error) {
+          setError(err.response.data.error);
+        } else {
+          setError(typeof err.response.data === 'string' ? err.response.data : 'Registration failed. Try again.');
+        }
+      } else {
+        setError('Registration failed. Try again.');
+      }
     } finally {
       setLoading(false);
     }
