@@ -20,6 +20,7 @@ export default function Register() {
       await register(username, password, email);
       navigate('/dashboard');
     } catch (err) {
+      console.log('Backend error response:', err);
       // Show backend error details if available
       if (err.response && err.response.data) {
         // If backend returns an object with error property

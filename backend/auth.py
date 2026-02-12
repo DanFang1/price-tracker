@@ -1,3 +1,4 @@
+import hashlib
 from passlib.context import CryptContext
 from database import get_connection
 from psycopg2 import sql, IntegrityError
@@ -6,12 +7,18 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
     "Hashes a plain text password using bcrypt"
-    return pwd_context.hash(password.encode('utf-8'))
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = hashlib.sha256(password_bytes).digest()
+    return pwd_context.hash(password_bytes)
 
 
 def verify_password(plain_password: str, hashed_password:str) -> bool:
     "Verifies a plain text password against a hashed password"
-    return pwd_context.verify(plain_password, hashed_password)
+    password_bytes = plain_password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = hashlib.sha256(password_bytes).digest()
+    return pwd_context.verify(password_bytes, hashed_password)
 
 
 def register_user(username: str, password: str, email: str) -> int:

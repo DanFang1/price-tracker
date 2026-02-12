@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import os
 import scraper as scraper
 
-
 load_dotenv()
 
 DB_NAME = os.getenv('DB_NAME')
