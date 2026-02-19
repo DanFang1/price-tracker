@@ -19,7 +19,7 @@ export default function Dashboard() {
   const fetchProducts = async () => {
     try {
       const response = await getDashboard();
-      setProducts(response.data);
+      setProducts(Array.isArray(response.data.products) ? response.data.products : []);
     } catch (err) {
       setError('Failed to load dashboard');
       if (err.response?.status === 401) {

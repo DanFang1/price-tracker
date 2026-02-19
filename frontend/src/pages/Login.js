@@ -45,7 +45,11 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          {error && <p className="error">{error}</p>}
+            {error && (
+              <p className="error">
+                {typeof error === 'string' ? error : error.message || JSON.stringify(error)}
+              </p>
+            )}
           <button type="submit" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
