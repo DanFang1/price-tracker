@@ -28,7 +28,7 @@ export default function Login() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Price Tracker</h1>
+        <h1>Yonex Tracker</h1>
         <h2>Login</h2>
         <form onSubmit={handleSubmit}>
           <input

@@ -2,8 +2,8 @@ from decimal import Decimal
 from playwright.sync_api import sync_playwright, TimeoutError
 import re
 
-price_selector = "sale-price"
-item_selector = "h1.product-title"
+price_selector = "price-reviews__container"
+item_selector = "product__title"
 
 def find_products(page):
     """ scrape product name and price from a given URL """
