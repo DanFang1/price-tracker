@@ -18,7 +18,7 @@
 
 .dashboard-header button {
   background: white;
-  color: #667eea;
+  color: #43c945;
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
@@ -54,7 +54,7 @@
 }
 
 .add-product-form {
-  background: white;
+  background: rgba(107, 226, 83, 0.795);
   padding: 20px;
   border-radius: 10px;
   margin-bottom: 20px;
@@ -66,15 +66,15 @@
 .add-product-form input {
   flex: 1;
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid #000000;
   border-radius: 5px;
   font-size: 14px;
 }
 
 .add-product-form button {
   padding: 12px 20px;
-  background: #667eea;
-  color: white;
+  background: #166e1b;
+  color: rgb(255, 255, 255);
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -82,7 +82,7 @@
 }
 
 .add-product-form button:hover {
-  background: #5568d3;
+  background: #1f5213;
 }
 
 .products-grid {
