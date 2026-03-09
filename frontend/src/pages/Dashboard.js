@@ -59,7 +59,7 @@ export default function Dashboard() {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>Price Tracker</h1>
+        <h1>Yonex Tracker</h1>
         <button onClick={() => navigate('/login')}>Logout</button>
       </header>
 
