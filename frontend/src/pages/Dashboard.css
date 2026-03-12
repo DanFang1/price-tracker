@@ -1,12 +1,55 @@
 .dashboard {
-  margin-top: 20px;
-  min-height: 100vh;
-  background: #e7e4e4;
+  margin-top: 25px;
+  margin-left: 400px;
+  margin-right: 400px;
+  background: none; /* remove red */
+}
+
+.dashboard-content {
+  position: relative;
+  background: #e0e0e0; /* gray here instead */
+  min-height: calc(100vh - 130px); /* scales with page */
+  border-radius: 0 0 20px 20px;
+  padding: 20px;
+}
+
+#title-font {
+  font-size: 36px;
+  color: white;
+}
+
+#logout-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;  
+  background: #009e0d;
+  color: white;
+  font-size: 15px;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+#astrox100zz{
+  position: absolute;
+  top: 20px;
+  left: 20px;  
+  font-size: 15px;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
 }
 
 .dashboard-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(180deg, #0b24e2 0%, #009e0d 100%);
   color: white;
+  border-radius: 20px 20px 0 0;
   padding: 20px;
   display: flex;
   justify-content: space-between;
@@ -19,7 +62,7 @@
 
 .dashboard-header button {
   background: white;
-  color: #43c945;
+  color: #009e0d;
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
@@ -32,21 +75,17 @@
   background: #f0f0f0;
 }
 
-.dashboard {
-  padding: 20px;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
 .add-btn {
-  background: #667eea;
+  position: absolute;
+  background: #009e0d;
   color: white;
-  padding: 12px 20px;
+  padding: 10px 20px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 16px;
-  margin-bottom: 20px;
+  font-size: 38px;
+  right: 40px;
+  bottom: 30px;
   transition: background 0.3s;
 }
 

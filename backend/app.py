@@ -81,7 +81,7 @@ def login():
 @app.route('/add_product', methods=['POST'])
 def add_product():
     query1 = """
-    UPDATE usertrackeditems SET notified = FALSE WHERE user_item_id = %s;
+    UPDATE usertrackeditems SET notified = FALSE WHERE usersitemid = %s;
     """
 
     user_id = session.get('user_id')
@@ -118,11 +118,11 @@ def add_product():
     if target_price >= current_price:
         return jsonify({"error": "Target price must be less than current price"}), 400
 
-    user_item_id = insert_user_products(user_id, product_url, target_price)
+    usersitemid = insert_user_products(user_id, product_url, target_price)
 
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(query1, (user_item_id,))
+            cur.execute(query1, (usersitemid,))
             conn.commit()
 
     return jsonify({"message": "Product added successfully"}), 200
@@ -147,10 +147,10 @@ def delete_product():
     # Verify the product belongs to the user before deleting
     query_verify = """
     SELECT 1 FROM usertrackeditems 
-    WHERE user_item_id = %s AND utt_user_id = %s;
+    WHERE usersitemid = %s AND userprofileid = %s;
     """
     
-    query_delete = "DELETE FROM usertrackeditems WHERE user_item_id = %s;"
+    query_delete = "DELETE FROM usertrackeditems WHERE usersitemid = %s;"
     
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -175,10 +175,10 @@ def dashboard():
     
     # Query database for user's products
     query = """
-    SELECT ut.user_item_id, p.product_name, p.current_price, ut.target_price
+    SELECT ut.usersitemid, p.product_name, p.current_price, ut.target_price
     FROM usertrackeditems ut
-    JOIN products p ON ut.user_item_id = p.product_id
-    WHERE ut.utt_user_id = %s
+    JOIN products p ON ut.usersitemid = p.product_id
+    WHERE ut.userprofileid = %s
     """
     
     with get_connection() as conn:

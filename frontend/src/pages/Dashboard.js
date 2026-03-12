@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDashboard, deleteProduct, addProduct } from '../api/products';
+import { getDashboard, deleteProduct, addProduct, getPriceGraph} from '../api/products';
 import './Dashboard.css';
+
 
 export default function Dashboard() {
   const [products, setProducts] = useState([]);
@@ -54,23 +55,24 @@ export default function Dashboard() {
     }
   };
 
+  const handleViewGraph = async (productId) => {
+    try {
+      await getPriceGraph(productId);
+    } catch (err) {
+      alert('Failed to view graph');
+    }
+  };
+    
   if (loading) return <div className="dashboard">Loading...</div>;
 
   return (
-    <div className="dashboard">
+    <div className="dashboard"> 
       <header className="dashboard-header">
-        <h1>Yonex Tracker</h1>
-        <button onClick={() => navigate('/login')}>Logout</button>
+        <h1 id="title-font">Yonex Tracker</h1>    
       </header>
 
+      <div className="dashboard-content">
       {error && <p className="error">{error}</p>}
-
-      <button 
-        className="add-btn"
-        onClick={() => setShowAddForm(!showAddForm)}
-      >
-        {showAddForm ? 'Cancel' : '+ Add Product'}
-      </button>
 
       {showAddForm && (
         <form className="add-product-form" onSubmit={handleAddProduct}>
@@ -99,6 +101,12 @@ export default function Dashboard() {
             <h3>{product[1]}</h3>
             <p>Current Price: <strong>${product[2]}</strong></p>
             <p>Target Price: <strong>${product[3]}</strong></p>
+            <button 
+              className="delete-btn"
+              onClick={() => handleViewGraph(product[0])}
+            >
+              Graph
+            </button>
             <button
               className="delete-btn"
               onClick={() => handleDeleteProduct(product[0])}
@@ -112,6 +120,17 @@ export default function Dashboard() {
       {products.length === 0 && (
         <p className="empty-state">No products tracked yet. Add one to get started!</p>
       )}
+      </div> 
+
+      <button 
+        className="add-btn"
+        onClick={() => setShowAddForm(!showAddForm)}
+      >
+        {showAddForm ? 'Cancel' : '+'}
+      </button>
+
+      <button id="logout-button" onClick={() => navigate('/login')}>Logout</button>
+
     </div>
   );
 }

@@ -33,30 +33,39 @@ def insert_user_products(user_id, product_url, target_price):
                 # Fetch product data
                 product = scraper.return_dict(product_url)
                 
-                # Atomically insert product or get existing one using ON CONFLICT
-                # This prevents race conditions when multiple processes insert simultaneously
-                upsert_query = sql.SQL(
+                # Insert product if new; if it already exists, reuse existing product_id.
+                # Keep current_price fresh on existing rows.
+                insert_product_query = sql.SQL(
                     """
                     INSERT INTO products (product_url, product_name, current_price)
                     VALUES (%s, %s, %s)
-                    ON CONFLICT (product_url) 
-                    DO UPDATE SET current_price = EXCLUDED.current_price
+                    ON CONFLICT (product_url)
+                    DO NOTHING
                     RETURNING product_id;
                     """
                 )
-                cur.execute(upsert_query, (product["product_url"], product["product_name"], product["product_price"]))
-                product_id = cur.fetchone()[0]
+                cur.execute(insert_product_query, (product["product_url"], product["product_name"], product["product_price"]))
+                inserted_row = cur.fetchone()
+
+                if inserted_row:
+                    product_id = inserted_row[0]
+                    is_new_product = True
+                else:
+                    is_new_product = False
+                    cur.execute("SELECT product_id FROM products WHERE product_url = %s", (product["product_url"],))
+                    product_id = cur.fetchone()[0]
+                    cur.execute("UPDATE products SET current_price = %s WHERE product_id = %s", (product["product_price"], product_id))
                 conn.commit()
                 print(f"Product ensured with ID: {product_id}")
                 
                 # Insert into usertrackeditems (ON CONFLICT handles duplicate user-product pairs)
                 user_tracking_query = sql.SQL(
                     """
-                    INSERT INTO usertrackeditems (user_item_id, utt_user_id, target_price)
+                    INSERT INTO usertrackeditems (usersitemid, userprofileid, target_price)
                     VALUES (%s, %s, %s)
-                    ON CONFLICT (user_item_id, utt_user_id) 
+                    ON CONFLICT (usersitemid, userprofileid) 
                     DO UPDATE SET target_price = EXCLUDED.target_price
-                    RETURNING user_item_id;
+                    RETURNING usersitemid;
                     """
                 )
                 cur.execute(user_tracking_query, (product_id, user_id, target_price))
@@ -64,15 +73,16 @@ def insert_user_products(user_id, product_url, target_price):
                 conn.commit()
                 print(f"User item upserted for user {user_id}")
 
-                # Insert initial price into price_history
-                price_history_query = sql.SQL(
-                    """
-                    INSERT INTO price_history (history_pid, recorded_price)
-                    VALUES (%s, %s)
-                    """
-                )
-                cur.execute(price_history_query, (product_id, product["product_price"]))
-                conn.commit()
+                # Insert initial price snapshot only when this product is first created.
+                if is_new_product:
+                    price_history_query = sql.SQL(
+                        """
+                        INSERT INTO price_history (history_pid, recorded_price)
+                        VALUES (%s, %s)
+                        """
+                    )
+                    cur.execute(price_history_query, (product_id, product["product_price"]))
+                    conn.commit()
                 
                 return user_item_id
                 
