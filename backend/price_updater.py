@@ -86,9 +86,9 @@ if __name__ == "__main__":
     import sys
     
     jobs = {
-        "refresh_prices": price_refresher,
-        "check_targets": check_and_notify_targets,
-        "reset_notified": reset_notified_prices,
+        "price_refresher": price_refresher,
+        "check_and_notify_targets": check_and_notify_targets,
+        "reset_notified_prices": reset_notified_prices,
     }
     
     if len(sys.argv) < 2:
